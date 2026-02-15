@@ -1180,12 +1180,12 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 	}`);
 
             if (this._options.objcSupport === false) {
-                this.ensureBlankLine();
-                this.emitMultiline(`    public var hashValue: Int {
+                if (!this._options.swift5Support) {
+                    this.ensureBlankLine();
+                    this.emitMultiline(`    public var hashValue: Int {
 			return 0
 	}`);
-
-                if (this._options.swift5Support) {
+                } else {
                     this.ensureBlankLine();
                     this.emitMultiline(`    public func hash(into hasher: inout Hasher) {
 			// No-op
@@ -1218,7 +1218,9 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
 
         if (this._needAny) {
             this.ensureBlankLine();
-            this.emitMultiline(`class JSONCodingKey: CodingKey {
+            const jsonCodingKeyFinal = this._options.sendable ? "final " : "";
+            const jsonCodingKeySendable = this._options.sendable && !this._options.objcSupport ? ", Sendable" : "";
+            this.emitMultiline(`${jsonCodingKeyFinal}class JSONCodingKey: CodingKey${jsonCodingKeySendable} {
 	let key: String
 	
 	required init?(intValue: Int) {
@@ -1246,7 +1248,8 @@ encoder.dateEncodingStrategy = .formatted(formatter)`);
                     "class JSONAny: NSObject, Codable {",
                 );
             } else {
-                this.emitLine(this.accessLevel, "class JSONAny: Codable {");
+                const jsonAnySendable = this._options.sendable ? ", @unchecked Sendable" : "";
+                this.emitLine(this.accessLevel, "class JSONAny: Codable" + jsonAnySendable + " {");
             }
 
             this.ensureBlankLine();
